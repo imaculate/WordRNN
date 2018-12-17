@@ -15,7 +15,7 @@ def str2bool(v):
 
 class ModelOptions:
     def __init__(self):
-        parser = argparse.ArgumentParser(description='Fiction generation with Wod-RNN')
+        parser = argparse.ArgumentParser(description='Fiction generation with Word-RNN')
         parser.add_argument('--dataset', type=str, default='tinyshakespeare', metavar='D', help='The name of the dataset (default: tinyshakespeare)')
         parser.add_argument('--rnn_size', type=int, default='128', help='size of LSTM internal state (default:128)')
         parser.add_argument('--embedding_size', type=int, default=200, help='size of word embeddings')
@@ -28,58 +28,51 @@ class ModelOptions:
         parser.add_argument('--learning_rate', type=float, default=2e-3, help='learning (default: 2e-3)')
         parser.add_argument('--learning_rate_decay', type=float, default=1, help='learning rate decay - rmsprop only (default: 1)')
         parser.add_argument('--learning_rate_decay_after', type=int, default=0, help='in number of epochs, when to start decaying the learning rate (default: 0)')
-    '''
-    cmd:option('-learning_rate_decay_by_val_loss',0,'if 1, learning rate is decayed when a validation loss is not smaller than the previous')
-    cmd:option('-learning_rate_decay_wait',0,'the minimum number of epochs the learning rate is kept after decaying it because of validation loss')
-    cmd:option('-decay_rate',0.5,'decay rate for rmsprop')
-    cmd:option('-dropout',0,'dropout for regularization, used after each RNN hidden layer. 0 = no dropout')
-    cmd:option('-recurrent_dropout',0,'dropout for regularization, used on recurrent connections. 0 = no dropout')
-    cmd:option('-zoneout',0,'zoneout for regularization, used on recurrent connections. 0 = no zoneout')
-    cmd:option('-zoneout_c',0,'zoneout on the lstm cell. 0 = no zoneout')
-    cmd:option('-recurrent_depth', 0, 'the number of additional h2h matrices, when the model is an SDRNN')
-    cmd:option('-gradient_noise',0,'amount of gradient noise for regularization (will be decayed over time t, as b/t^0.55 )')
-    cmd:option('-activation_clamp',0,'clamp activations at this value (sdrnn only)')
-    cmd:option('-activation_l2',0,'amount of l2 penalization to apply to the activations (sdrnn only)')
-    cmd:option('-l2',0,'amount of l2 weight decay to regularize the model with')
-    cmd:option('-activation_l1',0,'amount of l1 weight decay to regularize the model with (rnn & dfarnn only)')
-    cmd:option('-batch_normalization',0,'whether to apply batch normalization (0=no BN, 1=vertical BN, 2=vertical and horizontal BN)')
-    cmd:option('-layer_normalization',0,'whether to apply layer normalization')
-    '''
+        parser.add_argument('--learning_rate_decay_by_val_loss', type=str2bool, default=False, help='if True, learning rate is decayed when a validation loss is not smaller than the previous (default: False)')
+        parser.add_argument('--learning_rate_decay_wait', type=int, default=0, help='the minimum number of epochs the learning rate is kept after decaying it because of validation loss (default: 0)')
+        parser.add_argument('--decay_rate', type=float, default=0.5, help='decay rate for rmsprop (default: 0.5)')
+        parser.add_argument('--dropout', type=float, default=0, help='dropout for regularization, used after each RNN hidden layer. 0 = no dropout (default: 0)')
+        parser.add_argument('--recurrent_dropout', type=float, default=0, help='dropout for regularization, used on recurrent connections. 0 = no dropout (default: 0)')
+        parser.add_argument('--zoneout', type=float, default=0, help='zoneout for regularization, used on recurrent connections. 0 = no zoneout (default: 0)')
+        parser.add_argument('--zoneout_c', type=float, default=0, help='zoneout on the lstm cell. 0 = no zoneout (default: 0)')
+        parser.add_argument('--recurrent_depth', type=int, default=0, help='the number of additional h2h matrices, when the model is an SDRNN (default:0)')
+        parser.add_argument('--gradient_noise', type=float, default=0, help='amount of gradient noise for regularization (will be decayed over time t, as b/t^0.55 ) (default: 0)')
+        parser.add_argument('--activation_clamp', type=float, default=0, help='clamp activations at this value (sdrnn only) (default: 0)')
+        parser.add_argument('--activation_l2', type=float, default=0, help='amount of l2 penalization to apply to the activations (sdrnn only) (default: 0)')
+        parser.add_argument('--l2', type=float, default=0, help='amount of l2 weight decay to regularize the model with (default: 0)')
+        parser.add_argument('--activation_l1', type=float, help='amount of l1 weight decay to regularize the model with (rnn & dfarnn only) (default: 0)')
+        parser.add_argument('--batch_normalization', type=int, default=0, help='whether to apply batch normalization [0=no BN, 1=vertical BN, 2=vertical, horizontal BN] (default: 0)')
+        parser.add_argument('--;', type=str2bool, default=False, help='whether to apply layer normalization (default: False)')
+        parser.add_argument('--seq_length', type=int, default=50, help='number of timesteps to unroll for (default: 50)')
+        parser.add_argument('--batch_size', type=int, default=50, help='number of sequences to train on parallel (default: 50)')
+        parser.add_argument('--max_epochs', type=int, default=50, help='number of full passes through the training data (default: 50)')
+        parser.add_argument('--grad_clip', type=int, default=5, help='clip gradients at this value (default: 5)')
+        parser.add_argument('--max_norm', type=float, default=0, help='make sure gradient norm does not exceed this value (default: 0)')
+        parser.add_argument('--train_frac', type=float, default=0.95, help='fraction of data that goes into train set (default: 0.95)')
+        parser.add_argument('--val_frac', type=float, default=0.05, help='fraction of data that goes into validation set test_frac will be computed as (1 - train_frac - val_frac)(default: 0.05)')
+        parser.add_argument('--init_from', default=None, help='initialize network parameters from checkpoint at this path (default: None)' )
+        parser.add_argument('--random_crops', type=str2bool, default=True, help='use a random crop of the training data per epoch when it does not evenly divide into the number of batches (default: True)')
+        parser.add_argument('--word_level', type=str2bool, default=False,
+                            help='whether to operate on the word level, instead of character level [False: use chars, True: use words ] (default: False)')
+        parser.add_argument('--threshold', type=int, default=0,
+                            help='minimum number of occurences a token must have to be included (ignored if --word-level is False) (default: 0)')
+        parser.add_argument('--glove', type=str2bool, default=False,
+                            help='whether or not to use GloVe embeddings (default: False)')
+        parser.add_argument('--non_glove_embedding', type=str2bool, default=False,
+                            help='use embedding with random initialization (default: False)')
+        parser.add_argument('--optimizer', type=str, default='rmsprop',
+                            help='which optimizer to use: adam or rmsprop (default: rmsprop)')
 
-
-        ''''
-        parser.add_argument('--mode', default=0, help='run mode [0: train, 1: evaluate, 2: test] (default: 0)')
-        parser.add_argument('--dataset', type=str, default='places365', help='the name of dataset [places365, cifar10, historybw] (default: places365)')
-        parser.add_argument('--dataset-path', type=str, default='./dataset', help='dataset path (default: ./dataset)')
-        parser.add_argument('--checkpoints-path', type=str, default='./checkpoints', help='models are saved here (default: ./checkpoints)')
-        parser.add_argument('--batch-size', type=int, default=16, metavar='N', help='input batch size for training (default: 16)')
-        parser.add_argument('--color-space', type=str, default='lab', help='model color space [lab, rgb] (default: lab)')
-        parser.add_argument('--epochs', type=int, default=30, metavar='N', help='number of epochs to train (default: 30)')
-        parser.add_argument('--lr', type=float, default=3e-4, metavar='LR', help='learning rate (default: 3e-4)')
-        parser.add_argument('--lr-decay-rate', type=float, default=0.1, help='learning rate exponentially decay rate (default: 0.1)')
-        parser.add_argument('--lr-decay-steps', type=float, default=5e5, help='learning rate exponentially decay steps (default: 5e5)')
-        parser.add_argument('--beta1', type=float, default=0, help='momentum term of adam optimizer (default: 0)')
-        parser.add_argument("--l1-weight", type=float, default=100.0, help="weight on L1 term for generator gradient (default: 100.0)")
-        parser.add_argument('--augment', type=str2bool, default=True, help='True for augmentation (default: True)')
-        parser.add_argument('--label-smoothing', type=str2bool, default=False, help='True for one-sided label smoothing (default: False)')
-        parser.add_argument('--acc-thresh', type=float, default=2.0, help="accuracy threshold (default: 2.0)")
-        parser.add_argument('--kernel-size', type=int, default=4, help="default kernel size (default: 4)")
-        parser.add_argument('--save', type=str2bool, default=True, help='True for saving (default: True)')
-        parser.add_argument('--save-interval', type=int, default=1000, help='how many batches to wait before saving model (default: 1000)')
-        parser.add_argument('--sample', type=str2bool, default=True, help='True for sampling (default: True)')
-        parser.add_argument('--sample-size', type=int, default=8, help='number of images to sample (default: 8)')
-        parser.add_argument('--sample-interval', type=int, default=1000, help='how many batches to wait before sampling (default: 1000)')
-        parser.add_argument('--validate', type=str2bool, default=True, help='True for validation (default: True)')
-        parser.add_argument('--validate-interval', type=int, default=0, help='how many batches to wait before validating (default: 0)')
-        parser.add_argument('--log', type=str2bool, default=False, help='True for logging (default: True)')
-        parser.add_argument('--log-interval', type=int, default=10, help='how many iterations to wait before logging training status (default: 10)')
-        parser.add_argument('--visualize', type=str2bool, default=False, help='True for accuracy visualization (default: False)')
-        parser.add_argument('--visualize-window', type=int, default=100, help='the exponentially moving average window width (default: 100)')
-        parser.add_argument('--test-size', type=int, default=100, metavar='N', help='number of Turing tests (default: 100)')
-        parser.add_argument('--test-delay', type=int, default=0, metavar='N', help='number of seconds to wait when doing Turing test, 0 for unlimited (default: 0)')
-        parser.add_argument('--gpu-ids', type=str, default='0', help='gpu ids: e.g. 0  0,1,2, 0,2. use -1 for CPU')
-        '''
-
+        ## bookeeping
+        parser.add_argument('--seed', type=int, default=123, help='manual random number generator seed (default: 123)')
+        parser.add_argument('--print_every', type=int, default=1, help='how many steps/minibatches between printing out the loss (default: 1)')
+        parser.add_argument('--eval_val_every', type=int, default=1000, help='every how many iterations should we evaluate on validation data (default: 1000)')
+        parser.add_argument('--checkpoints_dir', type=str, default='checkpoint', help='output directory where checkpoints get written (default: checkpoint )')
+        parser.add_argument('--data_dir', type=str, default='data', help='input directory where dataset is stored (default: data )')
+        parser.add_argument('--accurate_gpu_timing', default=False, help='set this flag to get precise timings when using GPU. Might make code bit slower but reports accurate timings (default: False)')
+        #GPU /CPU
+        parser.add_argument('--gpuid', type=int, default=0, help='which gpu to use , -1 to use CPU (default: 0)')
+        parser.add_argument('--opencl', type=str2bool, default=False, help='use OpenCL instead of CUDA (default: False)')
 
         self._parser = parser
 
