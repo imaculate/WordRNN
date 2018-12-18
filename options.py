@@ -16,13 +16,15 @@ def str2bool(v):
 class ModelOptions:
     def __init__(self):
         parser = argparse.ArgumentParser(description='Fiction generation with Word-RNN')
-        parser.add_argument('--dataset', type=str, default='tinyshakespeare', metavar='D', help='The name of the dataset (default: tinyshakespeare)')
+        parser.add_argument('--mode', type=str, default='train', help='Running mode [train, test, sample]')
+        parser.add_argument('--model', type=str, default='lstm',
+                            help='Model type [lstm, gru, rnn, irnn] (default: lstm)')
+        parser.add_argument('--dataset', type=str, default='tinyshakespeare', help='The name of the dataset (default: tinyshakespeare)')
         parser.add_argument('--rnn_size', type=int, default='128', help='size of LSTM internal state (default:128)')
         parser.add_argument('--embedding_size', type=int, default=200, help='size of word embeddings')
         parser.add_argument('--learn_embeddings', type=str2bool, default=True, help='True to learn embeddings, False to keep embeddings fixed (default: True)')
         parser.add_argument('--num_layers', type=int, default=2, help='number of layers in the LSTM (default: 2)')
         parser.add_argument('--num_fixed', type=int, default=0, help='number of recurrent layers to remain fixed (untrained), pretrained (LSTM only) (default: 0)')
-        parser.add_argument('--model', type=str, default='lstm', help='Model type [lstm, gru, rnn, irnn] (default: lstm)')
         parser.add_argument('--lsuv_int', type=str2bool, default=False, help='use layer-sequential unit-variance (LSUV) initialization (default: false)')
         parser.add_argument('--multiplicative_integration', type=str2bool, default=False, help='turns on multiplicative integration (as opposed to simply summing states) (default: false)')
         parser.add_argument('--learning_rate', type=float, default=2e-3, help='learning (default: 2e-3)')
@@ -67,8 +69,8 @@ class ModelOptions:
         parser.add_argument('--seed', type=int, default=123, help='manual random number generator seed (default: 123)')
         parser.add_argument('--print_every', type=int, default=1, help='how many steps/minibatches between printing out the loss (default: 1)')
         parser.add_argument('--eval_val_every', type=int, default=1000, help='every how many iterations should we evaluate on validation data (default: 1000)')
-        parser.add_argument('--checkpoints_dir', type=str, default='checkpoint', help='output directory where checkpoints get written (default: checkpoint )')
-        parser.add_argument('--data_dir', type=str, default='data', help='input directory where dataset is stored (default: data )')
+        parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='output directory where checkpoints get written (default: checkpoint )')
+        parser.add_argument('--data_dir', type=str, default='./data', help='input directory where dataset is stored (default: data )')
         parser.add_argument('--accurate_gpu_timing', default=False, help='set this flag to get precise timings when using GPU. Might make code bit slower but reports accurate timings (default: False)')
         #GPU /CPU
         parser.add_argument('--gpuid', type=int, default=0, help='which gpu to use , -1 to use CPU (default: 0)')
